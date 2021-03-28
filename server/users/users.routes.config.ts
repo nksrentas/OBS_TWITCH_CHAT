@@ -1,23 +1,33 @@
+import debug from 'debug';
 import express from 'express'
+import tmi from 'tmi.js'
 
-import debug from '../shared/lib/debug.singleton'
+import debugSingleton from '../shared/lib/debug.singleton'
+import TwitchIRC from '../shared/lib/twitchIRC';
 import SharedRoutesConfig from '../shared/shared.routes.config';
+import usersController from './controllers/users.controller';
+import usersMiddleware from './middleware/users.middleware';
 
 export default class UsersRoutesConfing extends SharedRoutesConfig {
+  private _log: debug.IDebugger
+
   constructor(app: express.Application) {
     super(app, 'USERS_ROUTE')
+    this._log = debugSingleton.extendNamspace('users-route')
   }
 
   configureRoutes(): express.Application {
-    this.app.param('name', (req: express.Request, res: express.Response, next: express.NextFunction, name: string) => {
-      debug.log('Streamer name: ', name);
-      next()
+    this.app.param('name', usersMiddleware.extractStreamerName)
 
-    })
     this.app.route('/streamer/:name')
-      .all()
       .get((req: express.Request, res: express.Response) => {
-        res.json({ message: 'its return' })
+        const { streamer } = req.body
+        const client: tmi.Client = new TwitchIRC(streamer).instance
+
+        usersController.connect(client)
+        usersController.emitMessageToClient(client)
+
+        res.render('index', { title: `${streamer.toUpperCase()}` })
       })
 
     return this.app

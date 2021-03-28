@@ -17,6 +17,7 @@
   "plugins": ["@typescript-eslint", "prettier"],
   "rules": {
     "no-underscore-dangle": "off",
+    "class-methods-use-this": "off",
     "import/extensions": [
       "error",
       "never",
